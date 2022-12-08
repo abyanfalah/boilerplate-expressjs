@@ -11,6 +11,8 @@ const query = {
 	INSERT: "INSERT INTO users SET ?",
 	UPDATE: "UPDATE users SET ? WHERE id = ?",
 	DELETE: "DELETE FROM users WHERE id = ?",
+
+	SELECT_USERNAME: "SELECT username FROM users WHERE username = ?",
 };
 
 module.exports = {
@@ -76,6 +78,17 @@ module.exports = {
 					return resolve(result[0]);
 				}
 			);
+		});
+	},
+
+	usernameIsAvailable: (username) => {
+		return new Promise((resolve, reject) => {
+			db.query(query.SELECT_USERNAME, username, (err, result) => {
+				if (err) return reject(err);
+
+				if (result.length > 0) return resolve(false);
+				return resolve(true);
+			});
 		});
 	},
 };

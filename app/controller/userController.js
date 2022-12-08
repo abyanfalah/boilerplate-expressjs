@@ -36,6 +36,14 @@ module.exports = {
 
 	createUser: async (req, res) => {
 		try {
+			if (!(await userModel.usernameIsAvailable(req.body.username)))
+				return res.status(400).send({ message: "username taken" });
+
+			if (req.body.password.length < 4)
+				return res
+					.status(400)
+					.send({ message: "password should be at least 4 characters long" });
+
 			userModel.create(req.body);
 			res.send({ message: "user created" });
 		} catch (e) {
