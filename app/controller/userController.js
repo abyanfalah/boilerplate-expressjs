@@ -77,6 +77,9 @@ module.exports = {
 
 	deleteUser: async (req, res) => {
 		try {
+			if (req.params.id === req.session.user.id)
+				return res.status(400).send({ message: "cannot delete self account" });
+
 			let foundUser = await userModel.getById(req.params.id);
 			if (!foundUser) {
 				return res.sendStatus(404);
