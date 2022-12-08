@@ -1,42 +1,81 @@
 const db = require("../../database").db;
+const uuid = require("uuid");
+const sha1 = require("sha1");
 
 const query = {
-	SELECT_ALL: "SELECT * FROM users",
-	SELECT_BY_ID: this.SELECT_ALL + "WHERE id = ? LIMIT 1",
+	SELECT_ALL: "SELECT * FROM users LIMIT ? OFFSET ?",
+	SELECT_BY_ID: "SELECT * FROM users WHERE id = ? LIMIT 1",
+	SELECT_BY_CREDENTIALS:
+		"SELECT * FROM users WHERE username = ? AND password = ? LIMIT 1",
+
+	INSERT: "INSERT INTO users SET ?",
 	UPDATE: "UPDATE users SET ? WHERE id = ?",
 	DELETE: "DELETE FROM users WHERE id = ?",
 };
 
 module.exports = {
-	getAll: () => {
-		db.query(query.SELECT_ALL, (err, queryResult) => {
-			if (err) throw err;
-			return "queryResult";
+	getAll: (limit, offset) => {
+		return new Promise((resolve, reject) => {
+			db.query(
+				query.SELECT_ALL,
+				[parseInt(limit), parseInt(offset)],
+				(err, result) => {
+					if (err) return reject(err);
+					return resolve(result);
+				}
+			);
 		});
 	},
 
 	getById: (id) => {
-		let result;
-		db.query(query.SELECT_BY_ID, id, (err, queryResult) => {
-			if (err) throw err;
-			result = queryResult[0];
+		return new Promise((resolve, reject) => {
+			db.query(query.SELECT_BY_ID, id, (err, result) => {
+				if (err) return reject(err);
+				return resolve(result[0]);
+			});
 		});
-		return result;
 	},
 
-	update: (id) => {
-		let dataFound = this.getById(id);
-		if (!dataFound) return;
-		db.query(query.UPDATE, id, (err) => {
-			if (err) throw err;
+	create: (newData) => {
+		newData.id = uuid.v4();
+		newData.password = sha1(newData.password);
+
+		return new Promise((resolve, reject) => {
+			db.query(query.INSERT, newData, (err) => {
+				if (err) return reject(err);
+				return resolve();
+			});
+		});
+	},
+
+	update: (newData) => {
+		return new Promise((resolve, reject) => {
+			db.query(query.UPDATE, [newData, newData.id], (err) => {
+				if (err) return reject(err);
+				return resolve();
+			});
 		});
 	},
 
 	delete: (id) => {
-		let dataFound = this.getById(id);
-		if (!dataFound) return;
-		db.query(query.DELETE, id, (err) => {
-			if (err) throw err;
+		return new Promise((resolve, reject) => {
+			db.query(query.DELETE, id, (err) => {
+				if (err) return reject(err);
+				return resolve();
+			});
+		});
+	},
+
+	getByCredentials: (credentials) => {
+		return new Promise((resolve, reject) => {
+			db.query(
+				query.SELECT_BY_CREDENTIALS,
+				[credentials.username, sha1(credentials.password)],
+				(err, result) => {
+					if (err) return reject(err);
+					return resolve(result[0]);
+				}
+			);
 		});
 	},
 };
